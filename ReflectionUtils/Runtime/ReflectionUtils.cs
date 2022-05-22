@@ -96,12 +96,25 @@ namespace AillieoUtils
 
         public static IEnumerable<Type> FindSubTypes(Type baseType)
         {
-            return AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).Where(t => t.IsSubclassOf(baseType) && !t.IsAbstract);
+            if (baseType.IsGenericType)
+            {
+                return AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes()
+                        .Where(t => t.BaseType != null
+                                    && t.BaseType.IsGenericType
+                                    && t.BaseType.GetGenericTypeDefinition() == baseType));
+            }
+            else
+            {
+                return AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes()
+                        .Where(t => t.IsSubclassOf(baseType) && !t.IsAbstract));
+            }
         }
 
-        public static IEnumerable<Type> FindImplementations(Type interfaceType, bool interfaceIsGenericType)
+        public static IEnumerable<Type> FindImplementations(Type interfaceType)
         {
-            if (interfaceIsGenericType)
+            if (interfaceType.IsGenericType)
             {
                 return AppDomain.CurrentDomain.GetAssemblies()
                     .SelectMany(a => a.GetTypes()
