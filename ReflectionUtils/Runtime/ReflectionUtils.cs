@@ -8,12 +8,16 @@ namespace AillieoUtils
     public static class ReflectionUtils
     {
         public static readonly BindingFlags flagAllAccessible = BindingFlags.Instance | BindingFlags.Static |
-                                                            BindingFlags.NonPublic | BindingFlags.Public |
-                                                            BindingFlags.DeclaredOnly;
+                                                            BindingFlags.NonPublic | BindingFlags.Public;
 
-        public static IEnumerable<Type> GetInheritanceChain(object target)
+        public static IEnumerable<Type> GetAllTypes()
         {
-            Type type = target.GetType();
+            return AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes());
+        }
+
+        public static IEnumerable<Type> GetInheritanceChain(Type type)
+        {
             while (type != null)
             {
                 yield return type;
@@ -21,54 +25,54 @@ namespace AillieoUtils
             }
         }
 
-        public static IEnumerable<FieldInfo> GetAllAccessibleFields(object target)
+        public static IEnumerable<FieldInfo> GetAllAccessibleFields(Type type)
         {
-            return GetInheritanceChain(target).SelectMany(t => t.GetFields(flagAllAccessible));
+            return type.GetFields(flagAllAccessible);
         }
 
-        public static IEnumerable<PropertyInfo> GetAllAccessibleProperties(object target)
+        public static IEnumerable<PropertyInfo> GetAllAccessibleProperties(Type type)
         {
-            return GetInheritanceChain(target).SelectMany(t => t.GetProperties(flagAllAccessible));
+            return type.GetProperties(flagAllAccessible);
         }
 
-        public static IEnumerable<MethodInfo> GetAllAccessibleMethods(object target)
+        public static IEnumerable<MethodInfo> GetAllAccessibleMethods(Type type)
         {
-            return GetInheritanceChain(target).SelectMany(t => t.GetMethods(flagAllAccessible));
+            return type.GetMethods(flagAllAccessible);
         }
 
-        public static IEnumerable<FieldInfo> GetAllAccessibleFields(object target, Predicate<FieldInfo> filter)
+        public static IEnumerable<FieldInfo> GetAllAccessibleFields(Type type, Predicate<FieldInfo> filter)
         {
-            return GetAllAccessibleFields(target).Where(f => filter(f));
+            return GetAllAccessibleFields(type).Where(f => filter(f));
         }
 
-        public static IEnumerable<PropertyInfo> GetAllAccessibleProperties(object target, Predicate<PropertyInfo> filter)
+        public static IEnumerable<PropertyInfo> GetAllAccessibleProperties(Type type, Predicate<PropertyInfo> filter)
         {
-            return GetAllAccessibleProperties(target).Where(p => filter(p));
+            return GetAllAccessibleProperties(type).Where(p => filter(p));
         }
 
-        public static IEnumerable<MethodInfo> GetAllAccessibleMethods(object target, Predicate<MethodInfo> filter)
+        public static IEnumerable<MethodInfo> GetAllAccessibleMethods(Type type, Predicate<MethodInfo> filter)
         {
-            return GetAllAccessibleMethods(target).Where(m => filter(m));
+            return GetAllAccessibleMethods(type).Where(m => filter(m));
         }
 
-        public static FieldInfo GetFieldEx(object target, string name)
+        public static FieldInfo GetFieldEx(Type type, string name)
         {
-            return GetAllAccessibleFields(target,f => f.Name == name).FirstOrDefault();
+            return GetAllAccessibleFields(type, f => f.Name == name).FirstOrDefault();
         }
 
-        public static PropertyInfo GetPropertyEx(object target, string name)
+        public static PropertyInfo GetPropertyEx(Type type, string name)
         {
-            return GetAllAccessibleProperties(target,p => p.Name == name).FirstOrDefault();
+            return GetAllAccessibleProperties(type, p => p.Name == name).FirstOrDefault();
         }
 
-        public static MethodInfo GetMethodEx(object target, string name)
+        public static MethodInfo GetMethodEx(Type type, string name)
         {
-            return GetAllAccessibleMethods(target,m => m.Name == name).FirstOrDefault();
+            return GetAllAccessibleMethods(type, m => m.Name == name).FirstOrDefault();
         }
 
-        public static IEnumerable<KeyValuePair<T, MemberInfo>> GetAllAttributes<T>(object target) where T : Attribute
+        public static IEnumerable<KeyValuePair<T, MemberInfo>> GetAllAttributes<T>(Type type) where T : Attribute
         {
-            foreach(var f in GetAllAccessibleFields(target))
+            foreach (var f in GetAllAccessibleFields(type))
             {
                 T attr = f.GetCustomAttribute<T>();
                 if (attr != null)
@@ -76,7 +80,8 @@ namespace AillieoUtils
                     yield return new KeyValuePair<T, MemberInfo>(attr, f);
                 }
             }
-            foreach (var p in GetAllAccessibleProperties(target))
+
+            foreach (var p in GetAllAccessibleProperties(type))
             {
                 T attr = p.GetCustomAttribute<T>();
                 if (p.GetCustomAttribute<T>() != null)
@@ -84,7 +89,8 @@ namespace AillieoUtils
                     yield return new KeyValuePair<T, MemberInfo>(attr, p);
                 }
             }
-            foreach (var m in GetAllAccessibleMethods(target))
+
+            foreach (var m in GetAllAccessibleMethods(type))
             {
                 T attr = m.GetCustomAttribute<T>();
                 if (m.GetCustomAttribute<T>() != null)
@@ -98,17 +104,15 @@ namespace AillieoUtils
         {
             if (baseType.IsGenericType)
             {
-                return AppDomain.CurrentDomain.GetAssemblies()
-                    .SelectMany(a => a.GetTypes()
+                return GetAllTypes()
                         .Where(t => t.BaseType != null
                                     && t.BaseType.IsGenericType
-                                    && t.BaseType.GetGenericTypeDefinition() == baseType));
+                                    && t.BaseType.GetGenericTypeDefinition() == baseType);
             }
             else
             {
-                return AppDomain.CurrentDomain.GetAssemblies()
-                    .SelectMany(a => a.GetTypes()
-                        .Where(t => t.IsSubclassOf(baseType) && !t.IsAbstract));
+                return GetAllTypes()
+                        .Where(t => t.IsSubclassOf(baseType) && !t.IsAbstract);
             }
         }
 
@@ -116,17 +120,15 @@ namespace AillieoUtils
         {
             if (interfaceType.IsGenericType)
             {
-                return AppDomain.CurrentDomain.GetAssemblies()
-                    .SelectMany(a => a.GetTypes()
+                return GetAllTypes()
                         .Where(t => t.GetInterfaces()
                             .Any(i => i.IsGenericType
-                                      && i.GetGenericTypeDefinition() == interfaceType)));
+                                      && i.GetGenericTypeDefinition() == interfaceType));
             }
             else
             {
-                return AppDomain.CurrentDomain.GetAssemblies()
-                    .SelectMany(a => a.GetTypes()
-                        .Where(t => t.GetInterfaces().Contains(interfaceType)));
+                return GetAllTypes()
+                        .Where(t => t.GetInterfaces().Contains(interfaceType));
             }
         }
     }
