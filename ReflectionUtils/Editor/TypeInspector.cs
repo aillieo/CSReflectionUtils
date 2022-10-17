@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -10,7 +9,7 @@ namespace AillieoUtils.CSReflectionUtils.Editor
 {
     public class TypeInspector : EditorWindow
     {
-        [MenuItem("AillieoUtils/ReflectionUtils/TypeInspector")]
+        [MenuItem("AillieoUtils/ReflectionUtils/Type Inspector")]
         public static void Open()
         {
             GetWindow<TypeInspector>("Type Inspector");
@@ -35,9 +34,8 @@ namespace AillieoUtils.CSReflectionUtils.Editor
         private string memberNameFilter = "Open";
         private string[] memberNames;
 
-        private Vector2 scrollPosition;
         [SerializeField]
-        private TreeViewState markViewState;
+        private TreeViewState treeViewState;
         private MemberInfoTreeView treeView;
 
         private int assemblySelected
@@ -70,14 +68,14 @@ namespace AillieoUtils.CSReflectionUtils.Editor
 
         private void Awake()
         {
-            Reload(6);
-
-            if (markViewState == null)
+            if (treeViewState == null)
             {
-                markViewState = new TreeViewState();
+                treeViewState = new TreeViewState();
             }
 
-            treeView = new MemberInfoTreeView(markViewState);
+            treeView = new MemberInfoTreeView(treeViewState);
+
+            Reload(6);
         }
 
         private void OnGUI()
@@ -180,25 +178,14 @@ namespace AillieoUtils.CSReflectionUtils.Editor
                 {
                     members = Array.Empty<MemberInfo>();
                 }
+
+                treeView.SetData(members);
             }
 
             // 根据filter筛选Member
             if (level >= 1)
             {
-                // UnityEngine.Debug.Log($"Reload({1})");
-                if (string.IsNullOrWhiteSpace(memberNameFilter))
-                {
-                    memberNames = members
-                        .Select(m => m.Name)
-                        .ToArray();
-                }
-                else
-                {
-                    memberNames = members
-                        .Select(m => m.Name)
-                        .Where(n => n.ContainsIgnoreCase(memberNameFilter))
-                        .ToArray();
-                }
+                treeView.searchString = memberNameFilter;
             }
         }
 
@@ -259,21 +246,8 @@ namespace AillieoUtils.CSReflectionUtils.Editor
 
             EditorGUILayout.LabelField("Members", EditorStyles.boldLabel);
 
-            treeView.SetData(members);
-            if (memberNames != null && memberNames.Length > 0)
-            {
-                //scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-
-                //for (int i = 0; i < memberNames.Length; ++i)
-                //{
-                //    GUILayout.Label(memberNames[i]);
-                //}
-
-                //EditorGUILayout.EndScrollView();
-
-                var rect = GUILayoutUtility.GetRect(0, EditorGUIUtility.currentViewWidth, 0, this.treeView.totalHeight);
-                this.treeView.OnGUI(rect);
-            }
+            var rect = GUILayoutUtility.GetRect(0, EditorGUIUtility.currentViewWidth, 0, this.treeView.totalHeight);
+            this.treeView.OnGUI(rect);
 
             EditorGUILayout.EndVertical();
         }
