@@ -3,63 +3,58 @@ using System.Reflection;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-public class MemberInfoTreeView : TreeView
+namespace AillieoUtils.CSReflectionUtils.Editor
 {
-    private List<MemberInfo> data = new List<MemberInfo>();
-
-    public MemberInfoTreeView(TreeViewState state)
-        : base(state)
+    public class MemberInfoTreeView : TreeView
     {
-        showAlternatingRowBackgrounds = true;
+        private List<MemberInfo> data = new List<MemberInfo>();
 
-        rowHeight = 20;
-        showBorder = true;
-
-        Reload();
-    }
-
-    public override void OnGUI(Rect rect)
-    {
-        base.OnGUI(rect);
-    }
-
-    protected override TreeViewItem BuildRoot()
-    {
-        return new TreeViewItem { id = 0, depth = -1, displayName = "root" };
-    }
-
-    protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
-    {
-        IList<TreeViewItem> rows = new List<TreeViewItem>();
-
-        //IList<TreeViewItem> rows = GetRows();
-        //rows = new List<TreeViewItem>();
-
-        if (!string.IsNullOrEmpty(searchString))
+        public MemberInfoTreeView(TreeViewState state)
+            : base(state)
         {
+            showAlternatingRowBackgrounds = true;
+
+            rowHeight = 20;
+            showBorder = true;
+
+            Reload();
         }
-        else
+
+        public override void OnGUI(Rect rect)
         {
+            base.OnGUI(rect);
+        }
+
+        protected override TreeViewItem BuildRoot()
+        {
+            return new TreeViewItem { id = 0, depth = -1, displayName = "root" };
+        }
+
+        protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
+        {
+            List<TreeViewItem> rows = new List<TreeViewItem>();
             foreach (var member in data)
             {
+                if (!string.IsNullOrEmpty(searchString) && !member.Name.ContainsIgnoreCase(searchString))
+                {
+                    continue;
+                }
+
                 TreeViewItem item = new TreeViewItem();
                 item.id = member.GetHashCode();
                 item.displayName = member.Name;
-                root.AddChild(item);
+                rows.Add(item);
             }
+
+            return rows;
         }
 
-        SetupDepthsFromParentsAndChildren(root);
-        return base.BuildRows(root);
-    }
+        public void SetData(IEnumerable<MemberInfo> newData)
+        {
+            this.data.Clear();
+            this.data.AddRange(newData);
 
-    public void SetData(IEnumerable<MemberInfo> newData)
-    {
-        this.data.Clear();
-        this.data.AddRange(newData);
-
-        BuildRows(rootItem);
-
-        Reload();
+            Reload();
+        }
     }
 }
