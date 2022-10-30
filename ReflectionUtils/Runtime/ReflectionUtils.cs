@@ -70,36 +70,6 @@ namespace AillieoUtils.CSReflectionUtils
             return GetAllAccessibleMethods(type, m => m.Name == name).FirstOrDefault();
         }
 
-        public static IEnumerable<KeyValuePair<T, MemberInfo>> GetAllAttributes<T>(Type type) where T : Attribute
-        {
-            foreach (var f in GetAllAccessibleFields(type))
-            {
-                T attr = f.GetCustomAttribute<T>();
-                if (attr != null)
-                {
-                    yield return new KeyValuePair<T, MemberInfo>(attr, f);
-                }
-            }
-
-            foreach (var p in GetAllAccessibleProperties(type))
-            {
-                T attr = p.GetCustomAttribute<T>();
-                if (p.GetCustomAttribute<T>() != null)
-                {
-                    yield return new KeyValuePair<T, MemberInfo>(attr, p);
-                }
-            }
-
-            foreach (var m in GetAllAccessibleMethods(type))
-            {
-                T attr = m.GetCustomAttribute<T>();
-                if (m.GetCustomAttribute<T>() != null)
-                {
-                    yield return new KeyValuePair<T, MemberInfo>(attr, m);
-                }
-            }
-        }
-
         public static IEnumerable<Type> FindSubTypes(Type baseType)
         {
             if (baseType.IsGenericType)
@@ -122,14 +92,23 @@ namespace AillieoUtils.CSReflectionUtils
             {
                 return GetAllTypes()
                         .Where(t => t.GetInterfaces()
-                            .Any(i => i.IsGenericType
-                                      && i.GetGenericTypeDefinition() == interfaceType));
+                        .Any(i => i.IsGenericType
+                                  && i.GetGenericTypeDefinition() == interfaceType));
             }
             else
             {
                 return GetAllTypes()
                         .Where(t => t.GetInterfaces().Contains(interfaceType));
             }
+        }
+
+        public static IEnumerable<KeyValuePair<T, Type>> GetAllTypesWithAttribute<T>()
+            where T : Attribute
+        {
+            return GetAllTypes()
+                .SelectMany(
+                    t => t.GetCustomAttributes<T>(),
+                    (type, attr) => new KeyValuePair<T, Type>(attr, type));
         }
     }
 }
