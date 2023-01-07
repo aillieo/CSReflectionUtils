@@ -102,12 +102,12 @@ namespace AillieoUtils.CSReflectionUtils
             }
         }
 
-        public static IEnumerable<KeyValuePair<T, Type>> GetAllTypesWithAttribute<T>()
+        public static IEnumerable<KeyValuePair<T, Type>> GetAllTypesWithAttribute<T>(bool inherit = true)
             where T : Attribute
         {
             return GetAllTypes()
                 .SelectMany(
-                    t => t.GetCustomAttributes<T>(),
+                    t => t.GetCustomAttributes<T>(inherit),
                     (type, attr) => new KeyValuePair<T, Type>(attr, type));
         }
     }
