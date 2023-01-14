@@ -12,7 +12,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             var ms = typeof(ClassDerived<int>).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
             foreach (var m in ms)
             {
-                UnityEngine.Debug.LogError(m.GetSignature());
+                UnityEngine.Debug.Log(m.GetSignature());
             }
         }
     }
