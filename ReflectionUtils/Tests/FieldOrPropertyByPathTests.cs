@@ -11,7 +11,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
         {
             ClassA a = new ClassA();
             a.number = 2;
-            ReflectionUtils.SetFieldOrPropertyByPath(a, "number", 3);
+            ReflectionUtils.SetFieldOrPropertyValueByPath(a, "number", 3);
             Assert.AreEqual(a.number, 3);
         }
 
@@ -21,7 +21,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             ClassA a = new ClassA();
             a.instanceB = new ClassB();
             a.instanceB.text = "hello";
-            ReflectionUtils.SetFieldOrPropertyByPath(a, "instanceB.text", "nice");
+            ReflectionUtils.SetFieldOrPropertyValueByPath(a, "instanceB.text", "nice");
             Assert.AreEqual(a.instanceB.text, "nice");
         }
 
@@ -30,7 +30,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
         {
             ClassA a = new ClassA();
             a.numberProp = 3;
-            ReflectionUtils.SetFieldOrPropertyByPath(a, "numberProp", 5);
+            ReflectionUtils.SetFieldOrPropertyValueByPath(a, "numberProp", 5);
             Assert.AreEqual(a.numberProp, 5);
         }
 
@@ -40,7 +40,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             ClassA a = new ClassA();
             a.instanceBProp = new ClassB();
             a.instanceBProp.instanceAProp = new ClassA();
-            ReflectionUtils.SetFieldOrPropertyByPath(a, "instanceBProp.instanceAProp.number", 10);
+            ReflectionUtils.SetFieldOrPropertyValueByPath(a, "instanceBProp.instanceAProp.number", 10);
             Assert.AreEqual(a.instanceBProp.instanceAProp.number, 10);
         }
 
@@ -50,7 +50,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             ClassA a = new ClassA();
             a.instanceBProp = new ClassB();
             a.instanceBProp.instanceA = new ClassA();
-            ReflectionUtils.SetFieldOrPropertyByPath(a, "instanceBProp.instanceA.number", 12);
+            ReflectionUtils.SetFieldOrPropertyValueByPath(a, "instanceBProp.instanceA.number", 12);
             Assert.AreEqual(a.instanceBProp.instanceA.number, 12);
         }
 
@@ -60,7 +60,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             ClassA a = new ClassA();
             a.instanceB = new ClassB();
             a.instanceB.instanceAProp = new ClassA();
-            ReflectionUtils.SetFieldOrPropertyByPath(a, "instanceB.instanceAProp.number", 8);
+            ReflectionUtils.SetFieldOrPropertyValueByPath(a, "instanceB.instanceAProp.number", 8);
             Assert.AreEqual(a.instanceB.instanceAProp.number, 8);
         }
 
@@ -69,13 +69,17 @@ namespace AillieoUtils.CSReflectionUtils.Tests
         {
             ClassC c = new ClassC();
             c.arrayOfA = new ClassA[] { new ClassA() };
-            ReflectionUtils.SetFieldOrPropertyByPath(c, "arrayOfA[0].number", 8);
+            ReflectionUtils.SetFieldOrPropertyValueByPath(c, "arrayOfA[0].number", 8);
             Assert.AreEqual(c.arrayOfA[0].number, 8);
         }
 
         [Test]
         public static void SetPropertyWithArray2()
         {
+            ClassC c = new ClassC();
+            c.numbers = new int[] { 0 };
+            ReflectionUtils.SetFieldOrPropertyValueByPath(c, "numbers[0]", 123);
+            Assert.AreEqual(c.numbers[0], 123);
         }
 
         [Test]
@@ -83,7 +87,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
         {
             ClassA a = new ClassA();
             a.number = 2;
-            ReflectionUtils.GetFieldOrPropertyByPath(a, "number", out object value);
+            ReflectionUtils.GetFieldOrPropertyValueByPath(a, "number", out object value);
             Assert.AreEqual(a.number, (int)value);
         }
 
@@ -93,7 +97,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             ClassA a = new ClassA();
             a.instanceB = new ClassB();
             a.instanceB.text = "hello";
-            ReflectionUtils.GetFieldOrPropertyByPath(a, "instanceB.text", out object value);
+            ReflectionUtils.GetFieldOrPropertyValueByPath(a, "instanceB.text", out object value);
             Assert.AreEqual(a.instanceB.text, (string)value);
         }
 
@@ -102,7 +106,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
         {
             ClassA a = new ClassA();
             a.numberProp = 3;
-            ReflectionUtils.GetFieldOrPropertyByPath(a, "numberProp", out object value);
+            ReflectionUtils.GetFieldOrPropertyValueByPath(a, "numberProp", out object value);
             Assert.AreEqual(a.numberProp, (int)value);
         }
 
@@ -113,7 +117,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             a.instanceBProp = new ClassB();
             a.instanceBProp.instanceAProp = new ClassA();
             a.instanceBProp.instanceAProp.number = 9;
-            ReflectionUtils.GetFieldOrPropertyByPath(a, "instanceBProp.instanceAProp.number", out object value);
+            ReflectionUtils.GetFieldOrPropertyValueByPath(a, "instanceBProp.instanceAProp.number", out object value);
             Assert.AreEqual(a.instanceBProp.instanceAProp.number, (int)value);
         }
 
@@ -124,7 +128,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             a.instanceBProp = new ClassB();
             a.instanceBProp.instanceA = new ClassA();
             a.instanceBProp.instanceA.number = 16;
-            ReflectionUtils.GetFieldOrPropertyByPath(a, "instanceBProp.instanceA.number", out object value);
+            ReflectionUtils.GetFieldOrPropertyValueByPath(a, "instanceBProp.instanceA.number", out object value);
             Assert.AreEqual(a.instanceBProp.instanceA.number, (int)value);
         }
 
@@ -135,7 +139,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             a.instanceB = new ClassB();
             a.instanceB.instanceAProp = new ClassA();
             a.instanceB.instanceAProp.number = 20;
-            ReflectionUtils.GetFieldOrPropertyByPath(a, "instanceB.instanceAProp.number", out object value);
+            ReflectionUtils.GetFieldOrPropertyValueByPath(a, "instanceB.instanceAProp.number", out object value);
             Assert.AreEqual(a.instanceB.instanceAProp.number, (int)value);
         }
 
@@ -145,13 +149,17 @@ namespace AillieoUtils.CSReflectionUtils.Tests
             ClassC c = new ClassC();
             c.arrayOfA = new ClassA[] { new ClassA() };
             c.arrayOfA[0].number = 6;
-            ReflectionUtils.GetFieldOrPropertyByPath(c, "arrayOfA[0].number", out object value);
+            ReflectionUtils.GetFieldOrPropertyValueByPath(c, "arrayOfA[0].number", out object value);
             Assert.AreEqual(c.arrayOfA[0].number, (int)value);
         }
 
         [Test]
         public static void GetPropertyWithArray2()
         {
+            ClassC c = new ClassC();
+            c.numbers = new int[] { 123 };
+            ReflectionUtils.GetFieldOrPropertyValueByPath(c, "numbers[0]", out object value);
+            Assert.AreEqual(c.numbers[0], (int)value);
         }
 
         /////////////////////////////////////////////////////////////////////////////////////////
@@ -179,7 +187,7 @@ namespace AillieoUtils.CSReflectionUtils.Tests
         public class ClassC
         {
             public ClassA[] arrayOfA;
-            public Dictionary<string, ClassB> dictionaryOfB;
+            public int[] numbers;
         }
     }
 }
