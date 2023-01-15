@@ -58,32 +58,38 @@ namespace AillieoUtils.CSReflectionUtils
 
         public static FieldInfo GetFieldEx(Type type, string name)
         {
-            return GetAllAccessibleFields(type, f => f.Name == name).FirstOrDefault();
+            return GetAllAccessibleFields(type, f => string.Equals(f.Name, name, StringComparison.Ordinal)).FirstOrDefault();
         }
 
         public static PropertyInfo GetPropertyEx(Type type, string name)
         {
-            return GetAllAccessibleProperties(type, p => p.Name == name).FirstOrDefault();
+            return GetAllAccessibleProperties(type, p => string.Equals(p.Name, name, StringComparison.Ordinal)).FirstOrDefault();
         }
 
         public static MethodInfo GetMethodEx(Type type, string name)
         {
-            return GetAllAccessibleMethods(type, m => m.Name == name).FirstOrDefault();
+            return GetAllAccessibleMethods(type, m => string.Equals(m.Name, name, StringComparison.Ordinal)).FirstOrDefault();
         }
 
-        public static IEnumerable<Type> FindSubTypes(Type baseType)
+        public static IEnumerable<Type> FindSubTypes(Type baseType, bool includeAbstract = true)
         {
+            var allTypes = GetAllTypes();
+            if (!includeAbstract)
+            {
+                allTypes = allTypes.Where(t => !t.IsAbstract);
+            }
+
             if (baseType.IsGenericType)
             {
-                return GetAllTypes()
-                        .Where(t => t.BaseType != null
-                                    && t.BaseType.IsGenericType
-                                    && t.BaseType.GetGenericTypeDefinition() == baseType);
+                return allTypes
+                    .Where(t => t.BaseType != null
+                    && t.BaseType.IsGenericType
+                    && t.BaseType.GetGenericTypeDefinition() == baseType);
             }
             else
             {
-                return GetAllTypes()
-                        .Where(t => t.IsSubclassOf(baseType) && !t.IsAbstract);
+                return allTypes
+                    .Where(t => t.IsSubclassOf(baseType) && !t.IsAbstract);
             }
         }
 
@@ -92,14 +98,14 @@ namespace AillieoUtils.CSReflectionUtils
             if (interfaceType.IsGenericType)
             {
                 return GetAllTypes()
-                        .Where(t => t.GetInterfaces()
-                        .Any(i => i.IsGenericType
-                                  && i.GetGenericTypeDefinition() == interfaceType));
+                    .Where(t => t.GetInterfaces()
+                    .Any(i => i.IsGenericType
+                    && i.GetGenericTypeDefinition() == interfaceType));
             }
             else
             {
                 return GetAllTypes()
-                        .Where(t => t.GetInterfaces().Contains(interfaceType));
+                    .Where(t => t.GetInterfaces().Contains(interfaceType));
             }
         }
 
@@ -108,13 +114,15 @@ namespace AillieoUtils.CSReflectionUtils
         {
             return GetAllTypes()
                 .SelectMany(
-                    t => t.GetCustomAttributes<T>(inherit),
-                    (type, attr) => new KeyValuePair<T, Type>(attr, type));
+                t => t.GetCustomAttributes<T>(inherit),
+                (type, attr) => new KeyValuePair<T, Type>(attr, type));
         }
 
-        public static bool GetFieldOrPropertyByPath(object source, string path, out object value)
+        private static readonly char[] pathSeparators = new char[] { '.', '[', ']' };
+
+        public static bool GetFieldOrPropertyValueByPath(object source, string path, out object value)
         {
-            string[] pathSegments = path.Replace("[", ".[").Split('.');
+            string[] pathSegments = path.Split(pathSeparators, StringSplitOptions.RemoveEmptyEntries);
 
             for (int i = 0; i < pathSegments.Length; i++)
             {
@@ -133,31 +141,40 @@ namespace AillieoUtils.CSReflectionUtils
             return true;
         }
 
-        private static bool GetFieldOrPropertyValue(object source, string path, out object value)
+        public static bool SetFieldOrPropertyValueByPath(object source, string path, object value)
         {
-            Type type = source.GetType();
-            if (type.IsArray && path.StartsWith("[", StringComparison.Ordinal) && path.EndsWith("]", StringComparison.Ordinal))
+            string[] pathSegments = path.Split(pathSeparators, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < pathSegments.Length - 1; i++)
             {
-                Array array = source as Array;
-                if (array == null)
+                if (source == null)
                 {
-                    value = default;
                     return false;
                 }
 
-                string indexStr = path.Substring(1, path.Length - 2);
-                if (int.TryParse(indexStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int index))
-                {
-                    value = array.GetValue(index);
-                    return true;
-                }
+                string pathSegment = pathSegments[i];
 
-                value = default;
-                return false;
+                GetFieldOrPropertyValue(source, pathSegment, out source);
+            }
+
+            string lastSegment = pathSegments[pathSegments.Length - 1];
+            SetFieldOrPropertyValue(source, lastSegment, value);
+
+            return true;
+        }
+
+        private static bool GetFieldOrPropertyValue(object source, string pathSegment, out object value)
+        {
+            Type type = source.GetType();
+            if (type.IsArray && int.TryParse(pathSegment, NumberStyles.Integer, CultureInfo.InvariantCulture, out int index))
+            {
+                Array array = source as Array;
+                value = array.GetValue(index);
+                return true;
             }
             else
             {
-                MemberInfo member = GetFieldOrPropertyInfo(type, path);
+                MemberInfo member = GetFieldOrPropertyInfo(type, pathSegment);
                 if (member is FieldInfo fieldInfo)
                 {
                     value = fieldInfo.GetValue(source);
@@ -174,52 +191,18 @@ namespace AillieoUtils.CSReflectionUtils
             }
         }
 
-        public static bool SetFieldOrPropertyByPath(object source, string path, object value)
-        {
-            string[] pathSegments = path.Replace("[", ".[").Split('.');
-
-            for (int i = 0; i < pathSegments.Length - 1; i++)
-            {
-                if (source == null)
-                {
-                    value = default;
-                    return false;
-                }
-
-                string pathSegment = pathSegments[i];
-
-                GetFieldOrPropertyValue(source, pathSegment, out source);
-            }
-
-            string lastSegment = pathSegments[pathSegments.Length - 1];
-            SetFieldOrPropertyValue(source, lastSegment, value);
-
-            return true;
-        }
-
-        private static bool SetFieldOrPropertyValue(object source, string path, object value)
+        private static bool SetFieldOrPropertyValue(object source, string pathSegment, object value)
         {
             Type type = source.GetType();
-            if (type.IsArray && path.StartsWith("[", StringComparison.Ordinal) && path.EndsWith("]", StringComparison.Ordinal))
+            if (type.IsArray && int.TryParse(pathSegment, NumberStyles.Integer, CultureInfo.InvariantCulture, out int index))
             {
                 Array array = source as Array;
-                if (array == null)
-                {
-                    return false;
-                }
-
-                string indexStr = path.Substring(1, path.Length - 2);
-                if (int.TryParse(indexStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int index))
-                {
-                    array.SetValue(value, index);
-                    return true;
-                }
-
-                return false;
+                array.SetValue(value, index);
+                return true;
             }
             else
             {
-                MemberInfo member = GetFieldOrPropertyInfo(type, path);
+                MemberInfo member = GetFieldOrPropertyInfo(type, pathSegment);
                 if (member is FieldInfo fieldInfo)
                 {
                     fieldInfo.SetValue(source, value);
@@ -235,15 +218,15 @@ namespace AillieoUtils.CSReflectionUtils
             }
         }
 
-        private static MemberInfo GetFieldOrPropertyInfo(Type type, string path)
+        private static MemberInfo GetFieldOrPropertyInfo(Type type, string memberName)
         {
-            MemberInfo[] members = type.GetMember(path, MemberTypes.Field | MemberTypes.Property, flagAllAccessible);
+            MemberInfo[] members = type.GetMember(memberName, MemberTypes.Field | MemberTypes.Property, flagAllAccessible);
             if (members != null && members.Length > 0)
             {
                 return members[0];
             }
 
-            throw new Exception($"Field or property not found: {path} in {type}");
+            throw new Exception($"Field or property not found: {memberName} in {type}");
         }
     }
 }
