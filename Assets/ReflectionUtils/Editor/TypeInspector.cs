@@ -4,6 +4,8 @@ using System.Reflection;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace AillieoUtils.CSReflectionUtils.Editor
 {
@@ -23,6 +25,7 @@ namespace AillieoUtils.CSReflectionUtils.Editor
 
         private Type[] types;
         private string typeNameFilter = "TypeInspector";
+        private bool typeIncludeCompilerGenerated;
         private string[] typeNames;
         private int typeSelectedValue = -1;
         private string typeSelectedStr;
@@ -32,7 +35,7 @@ namespace AillieoUtils.CSReflectionUtils.Editor
 
         private MemberInfo[] members;
         private string memberNameFilter = "Open";
-        private string[] memberNames;
+        private bool memberIncludeCompilerGenerated;
 
         [SerializeField]
         private TreeViewState treeViewState;
@@ -142,15 +145,21 @@ namespace AillieoUtils.CSReflectionUtils.Editor
             if (level >= 3)
             {
                 // UnityEngine.Debug.Log($"Reload({3})");
+                IEnumerable<Type> typesFiltered = types;
+                if (!typeIncludeCompilerGenerated)
+                {
+                    typesFiltered = typesFiltered.Where(t => !t.IsDefined(typeof(CompilerGeneratedAttribute)));
+                }
+
                 if (string.IsNullOrWhiteSpace(typeNameFilter))
                 {
-                    typeNames = types
+                    typeNames = typesFiltered
                         .Select(t => t.FullName)
                         .ToArray();
                 }
                 else
                 {
-                    typeNames = types
+                    typeNames = typesFiltered
                         .Select(t => t.FullName)
                         .Where(n => n.ContainsIgnoreCase(typeNameFilter))
                         .ToArray();
@@ -172,7 +181,13 @@ namespace AillieoUtils.CSReflectionUtils.Editor
                 Type selected = types.FirstOrDefault(t => t.FullName == typeSelectedStr);
                 if (selected != null)
                 {
-                    members = selected.GetMembers(bindingFlags).Where(m => (m.MemberType & memberTypes) != 0).ToArray();
+                    IEnumerable<MemberInfo> membersFiltered = selected.GetMembers(bindingFlags).Where(m => (m.MemberType & memberTypes) != 0);
+                    if (!memberIncludeCompilerGenerated)
+                    {
+                        membersFiltered = membersFiltered.Where(m => !m.IsDefined(typeof(CompilerGeneratedAttribute)));
+                    }
+
+                    members = membersFiltered.ToArray();
                 }
                 else
                 {
@@ -212,6 +227,7 @@ namespace AillieoUtils.CSReflectionUtils.Editor
 
             EditorGUI.BeginChangeCheck();
             typeNameFilter = EditorGUILayout.TextField(GUIContent.none, typeNameFilter);
+            typeIncludeCompilerGenerated = EditorGUILayout.ToggleLeft("IncludeCompilerGenerated", typeIncludeCompilerGenerated);
             if (EditorGUI.EndChangeCheck())
             {
                 Reload(3);
@@ -227,6 +243,7 @@ namespace AillieoUtils.CSReflectionUtils.Editor
             EditorGUILayout.LabelField("Member filters", EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
+            memberIncludeCompilerGenerated = EditorGUILayout.ToggleLeft("IncludeCompilerGenerated", memberIncludeCompilerGenerated);
             bindingFlags = (BindingFlags)EditorGUILayout.EnumFlagsField("BindingFlags", bindingFlags);
             memberTypes = (MemberTypes)EditorGUILayout.EnumFlagsField("MemberTypes", memberTypes);
             if (EditorGUI.EndChangeCheck())

@@ -21,21 +21,21 @@ namespace AillieoUtils.CSReflectionUtils
             if (parameterInfo.IsIn)
             {
                 stringBuilder.Append("in ");
-                stringBuilder.Append(parameterInfo.ParameterType.GetElementType().GetTypeAliasOrName());
+                stringBuilder.Append(parameterInfo.ParameterType.GetElementType().GetDeclaration());
             }
             else if (parameterInfo.IsOut)
             {
                 stringBuilder.Append("out ");
-                stringBuilder.Append(parameterInfo.ParameterType.GetElementType().GetTypeAliasOrName());
+                stringBuilder.Append(parameterInfo.ParameterType.GetElementType().GetDeclaration());
             }
             else if (parameterInfo.ParameterType.IsByRef)
             {
                 stringBuilder.Append("ref ");
-                stringBuilder.Append(parameterInfo.ParameterType.GetElementType().GetTypeAliasOrName());
+                stringBuilder.Append(parameterInfo.ParameterType.GetElementType().GetDeclaration());
             }
             else
             {
-                stringBuilder.Append(parameterInfo.ParameterType.GetTypeAliasOrName());
+                stringBuilder.Append(parameterInfo.ParameterType.GetDeclaration());
             }
 
             stringBuilder.Append(" ");

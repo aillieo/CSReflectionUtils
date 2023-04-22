@@ -8,7 +8,7 @@ namespace AillieoUtils.CSReflectionUtils
 {
     public static class MethodInfoExtensions
     {
-        public static string GetSignature(this MethodInfo methodInfo)
+        public static string GetDeclaration(this MethodInfo methodInfo)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -42,6 +42,11 @@ namespace AillieoUtils.CSReflectionUtils
             }
             else if (methodInfo.GetBaseDefinition().DeclaringType != methodInfo.DeclaringType)
             {
+                if (methodInfo.IsFinal)
+                {
+                    stringBuilder.Append("sealed ");
+                }
+
                 stringBuilder.Append("override ");
             }
             else if (methodInfo.IsVirtual)
@@ -56,7 +61,7 @@ namespace AillieoUtils.CSReflectionUtils
             }
 
             // return type
-            stringBuilder.Append(methodInfo.ReturnType.GetTypeAliasOrName());
+            stringBuilder.Append(methodInfo.ReturnType.GetDeclaration());
             stringBuilder.Append(" ");
 
             // name
@@ -68,7 +73,7 @@ namespace AillieoUtils.CSReflectionUtils
 
                 Type[] arguments = methodInfo.GetGenericArguments();
 
-                stringBuilder.Append(string.Join(", ", arguments.Select(t => t.GetTypeAliasOrName())));
+                stringBuilder.Append(string.Join(", ", arguments.Select(t => t.GetDeclaration())));
 
                 stringBuilder.Append(">");
             }
